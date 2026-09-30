@@ -1,0 +1,15 @@
+repositories:
+  rmw_iceoryx:
+    type: git
+    url: https://github.com/ros2/rmw_iceoryx.git
+    version: jazzy
+
+  callback_isolated_executor:
+    type: git
+    url: https://github.com/autowarefoundation/callback_isolated_executor.git
+    version: main
+
+  ros2_realtime_support:
+    type: git
+    url: https://github.com/esol-community/ros2_realtime_support
+    version: rolling

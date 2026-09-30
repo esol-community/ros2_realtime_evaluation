@@ -1,0 +1,20 @@
+hardware_info:
+  cpu_family: 6
+  cpu_max_mhz: 4700.0000
+  cpu_min_mhz: 800.0000
+  model: 191
+  model_name: Intel(R) Core(TM) i5-14400F
+  threads_per_core: 2
+callback_groups:
+  - id: /simple_subscriber@Subscription(/parameter_events)@Subscription(/timer_publisher_topic)@Service(/simple_subscriber/get_parameters)@Service(/simple_subscriber/get_parameter_types)@Service(/simple_subscriber/set_parameters)@Service(/simple_subscriber/set_parameters_atomically)@Service(/simple_subscriber/describe_parameters)@Service(/simple_subscriber/list_parameters)@Service(/simple_subscriber/get_type_description)@Timer(100000000)
+    affinity: ~
+    policy: SCHED_OTHER
+    priority: 0
+
+  - id: /timer_publisher@Subscription(/parameter_events)@Service(/timer_publisher/get_parameters)@Service(/timer_publisher/get_parameter_types)@Service(/timer_publisher/set_parameters)@Service(/timer_publisher/set_parameters_atomically)@Service(/timer_publisher/describe_parameters)@Service(/timer_publisher/list_parameters)@Service(/timer_publisher/get_type_description)@Timer(100000000)
+    affinity: ~
+    policy: SCHED_OTHER
+    priority: 0
+
+non_ros_threads:
+  []

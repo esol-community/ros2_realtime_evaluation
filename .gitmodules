@@ -1,0 +1,3 @@
+[submodule "3rd/caret_demos"]
+	path = 3rd/caret_demos
+	url = https://github.com/tier4/caret_demos.git

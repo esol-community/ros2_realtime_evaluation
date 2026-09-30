@@ -1,0 +1,60 @@
+services:
+  record: &record
+    tty: true
+    stdin_open: true
+    build: "."
+    volumes:
+      - type: bind
+        source: ./logs
+        target: /home/user/logs
+    privileged: true
+    environment: &envs
+      RMW_IMPLEMENTATION: "rmw_fastrtps_cpp"
+      arg_log_subdir: "record_stress_non_rt"
+    command: 
+      - /bin/bash
+      - -ec
+      - |
+        LOG_DIR=$${HOME}/logs/$${arg_log_subdir}/$$(date +%Y%m%d%H%M%S)
+        sudo mkdir -p $${LOG_DIR}
+        sudo chown $${USER}:$${USER} $${LOG_DIR}
+        . install/setup.bash
+        . $$WORKDIR_CARET/install/local_setup.bash
+        . install/local_setup.bash
+        export LD_PRELOAD=$$(readlink -f $$WORKDIR_CARET/install/caret_trace/lib/libcaret.so)
+        export ROS_TRACE_DIR=$${LOG_DIR}/caret
+        ros2 launch sample_node trace_sample_node.launch.py stress:=true executor:=${EXECUTOR:-single} 
+        sudo chmod 775 -R $${LOG_DIR}
+        sudo chown $${USER}:$${USER} -R $${LOG_DIR}
+
+  visualize: &visualize
+    build: "."
+    volumes:
+      - type: bind
+        source: ./logs
+        target: /home/user/logs
+      - type: bind
+        source: ./caret_sample
+        target: /home/user/caret_sample
+    ports:
+      - "8888:8888"
+    environment: &envs
+      arg_log_subdir: "record_stress_non_rt"
+      CARET_LOG_NAME: record_stress_non_rt
+    command:
+      - /bin/bash
+      - -c
+      - |
+        . $$WORKDIR_CARET/install/local_setup.bash
+        jupyter-lab --ip 0.0.0.0 --port 8888 --notebook-dir $${HOME}/caret_sample/jupyter
+  visualize-to-html:
+    <<: *visualize
+    command: |
+      bash -c "
+      . $$WORKDIR_CARET/install/local_setup.bash
+      for i in record_stress_non_rt ; do
+        export CARET_LOG_NAME=$$i
+        jupyter nbconvert --execute ~/caret_sample/jupyter/caret.ipynb --to html --output $$i
+        jupyter nbconvert --execute ~/caret_sample/jupyter/caret.ipynb --to notebook --output $$i
+      done
+      "

@@ -1,0 +1,67 @@
+named_paths:
+- path_name: sample_node_path
+  node_chain:
+  - node_name: /timer_publisher
+    publish_topic_name: /timer_publisher_topic_0
+    subscribe_topic_name: UNDEFINED
+  - node_name: /simple_subscriber
+    publish_topic_name: UNDEFINED
+    subscribe_topic_name: /timer_publisher_topic_0
+executors:
+- executor_type: single_threaded_executor
+  executor_name: executor_0
+  callback_group_names:
+  - /simple_subscriber/callback_group_0
+  - /timer_publisher/callback_group_0
+nodes:
+- node_name: /simple_subscriber
+  callback_groups:
+  - callback_group_type: mutually_exclusive
+    callback_group_name: /simple_subscriber/callback_group_0
+    callback_names:
+    - /simple_subscriber/callback_0
+    - /simple_subscriber/callback_1
+  callbacks:
+  - callback_name: /simple_subscriber/callback_0
+    callback_type: timer_callback
+    period_ns: 100000000
+    symbol: std::_Bind<void (sample_node::SimpleSubscriber<sensor_msgs::msg::PointCloud2_<std::allocator<void>
+      > >::*(sample_node::SimpleSubscriber<sensor_msgs::msg::PointCloud2_<std::allocator<void>
+      > >*))()>
+  - callback_name: /simple_subscriber/callback_1
+    callback_type: subscription_callback
+    topic_name: /timer_publisher_topic_0
+    symbol: sample_node::SimpleSubscriber<sensor_msgs::msg::PointCloud2_<std::allocator<void>
+      > >::SimpleSubscriber(rclcpp::NodeOptions const&)::{lambda(std::shared_ptr<sensor_msgs::msg::PointCloud2_<std::allocator<void>
+      > const>)#1}
+  variable_passings:
+  - callback_name_write: /simple_subscriber/callback_1
+    callback_name_read: /simple_subscriber/callback_0
+  publishes:
+  - topic_name: /simple_subscriber_topic
+    callback_names:
+    - /simple_subscriber/callback_0
+  subscribes:
+  - topic_name: /timer_publisher_topic_0
+    callback_name: /simple_subscriber/callback_1
+  message_contexts:
+  - context_type: callback_chain
+    subscription_topic_name: /timer_publisher_topic_0
+    publisher_topic_name: /simple_subscriber_topic
+- node_name: /timer_publisher
+  callback_groups:
+  - callback_group_type: mutually_exclusive
+    callback_group_name: /timer_publisher/callback_group_0
+    callback_names:
+    - /timer_publisher/callback_0
+  callbacks:
+  - callback_name: /timer_publisher/callback_0
+    callback_type: timer_callback
+    period_ns: 100000000
+    symbol: std::_Bind<void (sample_node::TimerPublisher<sensor_msgs::msg::PointCloud2_<std::allocator<void>
+      > >::*(sample_node::TimerPublisher<sensor_msgs::msg::PointCloud2_<std::allocator<void>
+      > >*))()>
+  publishes:
+  - topic_name: /timer_publisher_topic_0
+    callback_names:
+    - /timer_publisher/callback_0

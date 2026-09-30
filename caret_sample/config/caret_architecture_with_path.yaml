@@ -1,0 +1,114 @@
+named_paths:
+- path_name: sensor_1_path
+  node_chain:
+  - node_name: /sensor_proc_1
+    publish_topic_name: /sensor_proc_1_topic
+    subscribe_topic_name: UNDEFINED
+  - node_name: /sensor_fusion
+    publish_topic_name: /sensor_fusion_topic
+    subscribe_topic_name: /sensor_proc_1_topic
+- path_name: sensor_2_path
+  node_chain:
+  - node_name: /sensor_proc_2
+    publish_topic_name: /sensor_proc_2_topic
+    subscribe_topic_name: UNDEFINED
+  - node_name: /sensor_fusion
+    publish_topic_name: /sensor_fusion_topic
+    subscribe_topic_name: /sensor_proc_2_topic
+executors:
+- executor_type: single_threaded_executor
+  executor_name: executor_2
+  callback_group_names:
+  - /sensor_fusion/callback_group_0
+  - /sensor_proc_1/callback_group_0
+  - /sensor_proc_2/callback_group_0
+nodes:
+- node_name: /caret_session_node
+  callback_groups: []
+  publishes:
+  - topic_name: /caret/end_record
+    callback_names:
+    - UNDEFINED
+  - topic_name: /caret/start_record
+    callback_names:
+    - UNDEFINED
+- node_name: /sensor_fusion
+  callback_groups:
+  - callback_group_type: mutually_exclusive
+    callback_group_name: /sensor_fusion/callback_group_0
+    callback_names:
+    - /sensor_fusion/callback_0
+    - /sensor_fusion/callback_1
+    - /sensor_fusion/callback_2
+  callbacks:
+  - callback_name: /sensor_fusion/callback_0
+    callback_type: timer_callback
+    period_ns: 100000000
+    symbol: std::_Bind<void (sample_node::SensorFusion<sensor_msgs::msg::PointCloud2_<std::allocator<void>
+      > >::*(sample_node::SensorFusion<sensor_msgs::msg::PointCloud2_<std::allocator<void>
+      > >*))()>
+  - callback_name: /sensor_fusion/callback_1
+    callback_type: subscription_callback
+    topic_name: /sensor_proc_1_topic
+    symbol: sample_node::SensorFusion<sensor_msgs::msg::PointCloud2_<std::allocator<void>
+      > >::SensorFusion(rclcpp::NodeOptions const&)::{lambda(std::shared_ptr<sensor_msgs::msg::PointCloud2_<std::allocator<void>
+      > const>)#1}
+  - callback_name: /sensor_fusion/callback_2
+    callback_type: subscription_callback
+    topic_name: /sensor_proc_2_topic
+    symbol: sample_node::SensorFusion<sensor_msgs::msg::PointCloud2_<std::allocator<void>
+      > >::SensorFusion(rclcpp::NodeOptions const&)::{lambda(std::shared_ptr<sensor_msgs::msg::PointCloud2_<std::allocator<void>
+      > const>)#2}
+  variable_passings:
+  - callback_name_write: /sensor_fusion/callback_1
+    callback_name_read: /sensor_fusion/callback_0
+  publishes:
+  - topic_name: /sensor_fusion_topic
+    callback_names:
+    - /sensor_fusion/callback_0
+  subscribes:
+  - topic_name: /sensor_proc_1_topic
+    callback_name: /sensor_fusion/callback_1
+  - topic_name: /sensor_proc_2_topic
+    callback_name: /sensor_fusion/callback_2
+  message_contexts:
+  - context_type: callback_chain
+    subscription_topic_name: /sensor_proc_1_topic
+    publisher_topic_name: /sensor_fusion_topic
+  - context_type: callback_chain
+    subscription_topic_name: /sensor_proc_2_topic
+    publisher_topic_name: /sensor_fusion_topic
+- node_name: /sensor_proc_1
+  callback_groups:
+  - callback_group_type: mutually_exclusive
+    callback_group_name: /sensor_proc_1/callback_group_0
+    callback_names:
+    - /sensor_proc_1/callback_0
+  callbacks:
+  - callback_name: /sensor_proc_1/callback_0
+    callback_type: timer_callback
+    period_ns: 100000000
+    symbol: std::_Bind<void (sample_node::SensorProc1<sensor_msgs::msg::PointCloud2_<std::allocator<void>
+      > >::*(sample_node::SensorProc1<sensor_msgs::msg::PointCloud2_<std::allocator<void>
+      > >*))()>
+  publishes:
+  - topic_name: /sensor_proc_1_topic
+    callback_names:
+    - /sensor_proc_1/callback_0
+- node_name: /sensor_proc_2
+  callback_groups:
+  - callback_group_type: mutually_exclusive
+    callback_group_name: /sensor_proc_2/callback_group_0
+    callback_names:
+    - /sensor_proc_2/callback_0
+  callbacks:
+  - callback_name: /sensor_proc_2/callback_0
+    callback_type: timer_callback
+    period_ns: 100000000
+    symbol: std::_Bind<void (sample_node::SensorProc2<sensor_msgs::msg::PointCloud2_<std::allocator<void>
+      > >::*(sample_node::SensorProc2<sensor_msgs::msg::PointCloud2_<std::allocator<void>
+      > >*))()>
+  publishes:
+  - topic_name: /sensor_proc_2_topic
+    callback_names:
+    - /sensor_proc_2/callback_0
