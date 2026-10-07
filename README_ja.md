@@ -188,3 +188,7 @@ docker compose up --build visualize-to-html
 
 - ログファイルの出力先を、executorや実験条件毎に分けて出力する
 - CPU/メモリ使用状況の時系列取得
+
+## Acknowledgement
+
+本研究は、国立研究開発法人 新エネルギー・産業技術総合開発機構（NEDO） の委託研究プロジェクト JPNP25016 の支援を受けて実施されました。

@@ -181,3 +181,7 @@ This sample demonstrates the execution results obtained using the default enviro
 
 - Organize log outputs into separate directories for each executor and experimental condition.
 - Add support for time-series collection of CPU and memory usage metrics.
+
+## Acknowledgement
+
+This work was supported by the New Energy and Industrial Technology Development Organization (NEDO), Japan, under commissioned research project JPNP25016.
