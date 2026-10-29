@@ -22,7 +22,7 @@ RUN --mount=type=cache,target=/var/cache/apt \
     python3-colcon-common-extensions \
     python3-colcon-mixin \
     python3-rosdep \
-    python3-vcstool \
+    python3-vcs2l \
     ninja-build \
     ccache \
     cmake \
@@ -36,41 +36,42 @@ RUN --mount=type=cache,target=/var/cache/apt \
     uthash-dev \
     lttng-tools \
     tree \
-    && rm -rf /var/lib/apt/lists/*
+    software-properties-common
 
 WORKDIR /home/$USER
-RUN set -eux; \
-ARCH="$(dpkg --print-architecture)"; \
-   case "$ARCH" in \
-      arm64) NODE_ARCH="arm64" ;; \
-      amd64) NODE_ARCH="x64" ;; \
-      *) echo "Unsupported architecture: $ARCH"; exit 1 ;; \
-   esac; \
-   curl -fsSLO "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz"; \
-   tar -xJf "node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz" \
-      -C /usr/local \
-      --strip-components=1 \
-      --no-same-owner; \
-   rm "node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz"; \
-   node --version; \
-   npm --version
+RUN <<NODE_INSTALL
+set -eux
+ARCH="$(dpkg --print-architecture)"
+case "$ARCH" in
+    arm64) NODE_ARCH="arm64" ;;
+    amd64) NODE_ARCH="x64" ;;
+    *) echo "Unsupported architecture: $ARCH"; exit 1 ;;
+esac
+curl -fsSLO "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz"
+tar -xJf "node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz" \
+    -C /usr/local \
+    --strip-components=1 \
+    --no-same-owner
+rm "node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz"
+node --version
+npm --version
+NODE_INSTALL
 
 # ----------------------------
 # user
 # ----------------------------
 RUN useradd -m -s /bin/bash $USER && \
     usermod -aG sudo $USER && \
-    echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
-
-RUN chown -R $USER:$USER /home/$USER
+    echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers && \
+    chown -R $USER:$USER /home/$USER
 USER $USER
 
 # ----------------------------
 # env
 # ----------------------------
+ARG CARET_VERSION=v0.7.3
 ENV WORKDIR_CARET=/home/$USER/ros2_caret_ws
 ENV WORKDIR_SAMPLE=/home/$USER/ros2_ws
-ENV CARET_VERSION=v0.7.2
 ENV PATH=/home/$USER/.local/bin:$PATH
 
 # ----------------------------
@@ -79,7 +80,9 @@ ENV PATH=/home/$USER/.local/bin:$PATH
 ARG PUPPETEER_BROWSERS_VERSION=3.2.1
 ARG CHROME_VERSION=153.0.8010.5
 WORKDIR /home/$USER
-RUN --mount=type=cache,target=/home/$USER/.npm,uid=1001,gid=1001 \
+#,uid=1001,gid=1001
+RUN --mount=type=cache,target=/home/$USER/.npm \
+    sudo chown -R $(id -u):$(id -g) /home/user/.npm && \
     npx --yes "@puppeteer/browsers@${PUPPETEER_BROWSERS_VERSION}" \
     install "chrome@${CHROME_VERSION}"; \
     npx --yes "@puppeteer/browsers@${PUPPETEER_BROWSERS_VERSION}" \
@@ -97,12 +100,12 @@ WORKDIR $WORKDIR_CARET
 RUN --mount=type=cache,target=/var/cache/apt \
     --mount=type=cache,target=/var/lib/apt/lists \
     --mount=type=cache,target=/home/$USER/.cache/pip \
-    export PIP_BREAK_SYSTEM_PACKAGES=1 && \
     . /opt/ros/$ROS_DISTRO/setup.sh && \
+    sudo apt update && \
     rosdep update && \
     mkdir -p src && \
     vcs import src < caret_jazzy.repos && \
-    ./setup_caret.sh -c -d $ROS_DISTRO && \
+    PIP_BREAK_SYSTEM_PACKAGES=1 ./setup_caret.sh -c -d $ROS_DISTRO && \
     colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
 
 RUN --mount=type=cache,target=/home/$USER/.cache/pip \
@@ -112,18 +115,10 @@ RUN --mount=type=cache,target=/home/$USER/.cache/pip \
 # ----------------------------
 # sample workspace
 # ----------------------------
-RUN mkdir -p $WORKDIR_SAMPLE/src
+COPY ./ros2_ws/src $WORKDIR_SAMPLE/src
 WORKDIR $WORKDIR_SAMPLE/src
-
-RUN --mount=type=bind,source=./ros2_ws/src,target=/home/$USER/src_origin \
-    cp -ar /home/$USER/src_origin/* $WORKDIR_SAMPLE/src/
-
-RUN --mount=type=cache,target=/var/cache/apt \
-    --mount=type=cache,target=/var/lib/apt/lists \
-    --mount=type=cache,target=/home/$USER/.cache/pip \
-    export PIP_BREAK_SYSTEM_PACKAGES=1 && \
+RUN sudo chown -R $USER:$USER $WORKDIR_SAMPLE && \
     . /opt/ros/$ROS_DISTRO/setup.sh && \
-    # vcs import < sample_node/jazzy_in_house.repos
     vcs import < sample_node/jazzy_github.repos
 
 # ----------------------------
@@ -146,8 +141,8 @@ RUN --mount=type=cache,target=/home/${USER}/.ccache \
     . /opt/ros/${ROS_DISTRO}/setup.sh && \
     . ${WORKDIR_CARET}/install/local_setup.sh && \
     colcon build --symlink-install \
-      --cmake-args -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF --event-handlers console_direct+\
-      $APP_BUILD_FLAGS
+    --cmake-args -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF --event-handlers console_direct+\
+    $APP_BUILD_FLAGS
 
 
 # ----------------------------

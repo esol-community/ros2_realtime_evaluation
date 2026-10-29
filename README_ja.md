@@ -57,23 +57,35 @@ docker composeを使って収集を行うため `docker compuse run` コマン�
 docker compose run --build --remove-orphans record
 ```
 
-正常に完了した場合は`logs/`以下にログが記録される。  
+### ros2_realtime_supportパッケージを使用する場合
 
-### docker-composeでの設定例
-
-[docker-compose.yml](docker-compose.yml) の26行目のros2 launchに渡す引数を編集し、実験条件を設定する
-
-以下はSingleThredExecutorを使用し、cpu負荷を与える場合の設定例である。
-
-```yaml:docker-compose.yml
- ros2 launch sample_node trace_sample_node.launch.py stress:=true executor:=single 
-```
-
-また、executorについては、前述のコマンド実行時に`EXECUTOR`引数で指定することも可能である。  
+`ros2_realtime_support`を使用する場合は、事前にリアルタイムスレッドの設定ファイルを読み込む必要がある。  
 
 ```bash
-EXECUTOR=single docker compose run --build --remove-orphans record
+export ROS_THREAD_ATTRS_FILE=realtime.yml
 ```
+
+上記コマンド実施後に[計測ログの収集](#計測ログの収集)を行うことで、後述の`${EXECUTOR}=realtime_single`,`${EXECUTOR}=realtime_multi`指定時にリアルタイムパッケージが正常に適用される。  
+リアルタイムスレッドの設定ファイルに関する詳細は、[ros2_realtime_support/examples_rclcpp_realtime/README.md](https://github.com/esol-community/ros2_realtime_support/blob/rolling/examples_rclcpp_realtime/README.md#configuration-methods)参照のこと。  
+
+### 実験条件の設定
+
+本ソフトでは、以下の実験条件を設定できる。  
+
+- `stress`: 処理負荷を付与するかどうか
+- `executor`: EXECUTOR種の指定
+  - 指定可能なEXECUTOR種は、[後述](#ros2-launchで設定可能な引数一覧)参照
+
+`executor`,`stress`については、前述のコマンド実行時に`EXECUTOR`,`STRESS`引数で指定することも可能である。  
+(※defaultでは`${EXECUTOR}=single`,`${STRESS}=true`となる)  
+
+以下は、`${EXECUTOR}=realtime_single`,`${STRESS}=true`で指定する際のコマンド例である。
+
+```bash
+EXECUTOR=realtime_single STRESS=true docker compose run --build --remove-orphans record
+```
+
+`logs/`以下に`realtime_single_true/$(date +%Y%m%d%H%M%S)/`フォルダが作られ計測ログが格納される。
 
 #### ros2 launchで設定可能な引数一覧
 
@@ -170,13 +182,16 @@ docker compose up --build visualize
 
 表示されたURLを開くと `caret.ipynb` のあるディレクトリを参照しているため、 `caret.ipynb` を開き実行することで最新ログをもとに可視化される。
 
-また、計測ログを可視化するのみの場合は以下のコマンドで一括変換を行う:
+また、計測ログを可視化するのみの場合は以下のコマンドで一括変換を行う:  
+
+`logs/`以下にある可視化したい実験条件のフォルダ名を`CARET_LOG_NAME`にセットする。以下は、`realtime_single_true`を可視化する場合の例である。  
 
 ```bash
-docker compose up --build visualize-to-html
+CARET_LOG_NAME=realtime_single_true docker compose up --build visualize-to-html
 ```
 
 成功すると `nbconvert` を使い `caret_sample/jupyter/` 下にhtmlとipynbが生成される。  
+上記のコマンド例では、 `logs/realtime_single_true/` 下にある最新の計測ログを可視化し、 `caret_sample/jupyter/` 下に `realtime_single_true.html` , `realtime_single_true.ipynb` が作られる。  
 生成されるファイルは上書きされるため、連続してデータ取得を行う際にはファイルのリネームや退避の作業が必要である。  
 
 試験的に測定した結果のサンプルは `caret_sample/jupyter/record_sample.html` を参照すること。  

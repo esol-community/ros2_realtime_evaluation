@@ -53,22 +53,35 @@ Since collection is performed using docker compose, run the docker compuse run c
 docker compose run --build --remove-orphans record
 ```
 
-If the process completes successfully, logs will be stored under the `logs/` directory.  
+### Using the `ros2_realtime_support` Package
 
-#### docker-compose Configuration Example
-
-Edit the arguments passed to ros2 launch on line 26 of [docker-compose.yml](docker-compose.yml) and configure the test conditions.  
-The following is an example configuration using SingleThredExecutor with CPU load applied.
-
-```yaml:docker-compose.yml
- ros2 launch sample_node trace_sample_node.launch.py stress:=true executor:=single 
-```
-
-Additionally, the executor can be selected by specifying the `EXECUTOR` argument when running the command shown above.
+When using `ros2_realtime_support`, you must load the real-time thread configuration file in advance.
 
 ```bash
-EXECUTOR=single docker compose run --build --remove-orphans record
+export ROS_THREAD_ATTRS_FILE=realtime.yml
 ```
+
+After running the command above, perform the [Collecting Measurement Logs](#collecting-measurement-logs). This ensures that the real-time package is correctly applied when `${EXECUTOR}=realtime_single` or `${EXECUTOR}=realtime_multi` is specified.
+
+For details on the real-time thread configuration file, refer to [ros2_realtime_support/examples_rclcpp_realtime/README.md](https://github.com/esol-community/ros2_realtime_support/blob/rolling/examples_rclcpp_realtime/README.md#configuration-methods).
+
+### Configuration of Experimental Conditions
+
+This software allows the following experiment parameters to be configured:
+
+- `executor`: Executor type to use
+  - For the list of available executor types, see Available ROS [launch-arguments](#list-of-ros2-launch-arguments)
+- `stress`: Whether to apply additional processing load.
+
+`executor` and `stress` can also be specified using the `EXECUTOR` and `STRESS` arguments when executing the command above.
+
+*(Default values: `${EXECUTOR}=single`, `${STRESS}=true`)*
+
+```bash
+STRESS=true EXECUTOR=realtime_single docker compose run --build --remove-orphans record
+```
+
+Measurement logs are stored in `logs/realtime_single_true/$(date +%Y%m%d%H%M%S)/`.
 
 ##### List of ros2 launch Arguments
 
@@ -167,11 +180,14 @@ docker compose up --build visualize
 Opening the displayed URL and running `caret.ipynb` will visualize the latest logs.  
 If you only want to visualize the measurement logs, perform batch conversion with the following command:  
 
+Set `CARET_LOG_NAME` to the name of the experiment-condition directory under `logs/` that you want to visualize. The following example visualizes `realtime_single_true`.  
+
 ```bash
-docker compose up --build visualize-to-html
+CARET_LOG_NAME=realtime_single_true docker compose up --build visualize-to-html
 ```
 
 If successful, html and ipynb files are generated under `caret_sample/jupyter/` using `nbconvert`.
+In the command example above, the latest measurement log under `logs/realtime_single_true/` is visualized, and `realtime_single_true.html` and `realtime_single_true.ipynb` are generated in `caret_sample/jupyter/`.  
 Since the generated files are overwritten, renaming or backing up files is required when collecting data repeatedly.  
 
 For a sample of the experimentally measured results, refer to `caret_sample/jupyter/record_sample.html`.  
